@@ -25,7 +25,7 @@ int main()
 	logPath.append("\\logs\\service.log");
 
 	SERVICE_TABLE_ENTRYA srvTable[2];
-	char strSrvName[] = "YDCloudService";
+	char strSrvName[] = "kukaService";
 	srvTable[0].lpServiceName = strSrvName;
 	srvTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)ServiceMain;
 	srvTable[1].lpServiceName = NULL;
@@ -71,7 +71,7 @@ void WINAPI ServiceMain()
 	g_serviceStatus.dwServiceSpecificExitCode = 0;
 	g_serviceStatus.dwCheckPoint = 0;
 	g_serviceStatus.dwWaitHint = 0;
-	g_handStatus = RegisterServiceCtrlHandlerA("YDCloudService", CtrlHandler);
+	g_handStatus = RegisterServiceCtrlHandlerA("kukaService", CtrlHandler);
 
 	//向SCM 报告运行状态
 	g_serviceStatus.dwCurrentState = SERVICE_RUNNING;
