@@ -1,7 +1,6 @@
 ﻿
 #include "framework.h"
 #include "kukaAgent.h"
-#define MAX_LOADSTRING 100
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <comdef.h>
@@ -10,32 +9,20 @@
 #include <string>
 
 
-
 SERVICE_STATUS              g_serviceStatus;
 SERVICE_STATUS_HANDLE       g_handStatus;
 static HANDLE               g_hExit;
-static HMODULE              hDllNetSDK, hDllCommon, hDllService;
 static void WINAPI ServiceMain();
 static void WINAPI CtrlHandler(DWORD dwRequest);
-static void CreateProcessByUserToken();
-static void GetLocalDiskList(std::vector<std::string>& vecDiskList);
-static std::string GetRealPath(const std::string& strFileName);
-std::string  strSvcHostPath, strCfgFilePath,
-strSdkDllPath, strCommonDllPath;
 
 int main()
 {
-	std::string strLogPath;
+	std::string logPath;
 	char szBuf[MAX_PATH] = { 0 };
 	GetModuleFileNameA(NULL, szBuf, sizeof(szBuf) * sizeof(char));
 	PathRemoveFileSpecA(szBuf);
-	strLogPath.append(szBuf);
-	strLogPath.append("\\logs\\service.log");
-
-	//pLogger->info("启动悦多云系统服务...");
-
-	strSvcHostPath = GetRealPath("YDCloudSvcHost.exe");
-	strCfgFilePath = GetRealPath("YDCloudSrv.ini");
+	logPath.append(szBuf);
+	logPath.append("\\logs\\service.log");
 
 	SERVICE_TABLE_ENTRYA srvTable[2];
 	char strSrvName[] = "YDCloudService";
@@ -89,91 +76,4 @@ void WINAPI ServiceMain()
 	//向SCM 报告运行状态
 	g_serviceStatus.dwCurrentState = SERVICE_RUNNING;
 	SetServiceStatus(g_handStatus, &g_serviceStatus);
-}
-
-
-//获取本地磁盘列表
-void GetLocalDiskList(std::vector<std::string>& vecDiskList)
-{
-	DWORD dwSize = MAX_PATH;
-	char szLogicalDrives[MAX_PATH] = { 0 };
-	DWORD dwResult = GetLogicalDriveStringsA(dwSize, szLogicalDrives);
-	vecDiskList.clear();
-	if (dwResult > 0 && dwResult <= MAX_PATH)
-	{
-		char* szSingleDrive = szLogicalDrives;
-		if (NULL == szSingleDrive)
-		{
-			return;
-		}
-
-		while (*szSingleDrive)
-		{
-			UINT uDriverType = GetDriveTypeA(szSingleDrive);
-			if (DRIVE_FIXED != uDriverType)
-			{
-				szSingleDrive += lstrlenA(szSingleDrive) + 1;
-				continue;
-			}
-			vecDiskList.push_back(szSingleDrive);
-			szSingleDrive += lstrlenA(szSingleDrive) + 1;
-		}
-	}
-}
-
-
-void CreateProcessByUserToken()
-{
-	HANDLE hDuplicatedToken = NULL;
-	LPVOID lpEnvironment = NULL;
-	STARTUPINFOA si;
-	PROCESS_INFORMATION pi;
-	memset(&si, 0, sizeof(STARTUPINFOA));
-	memset(&pi, 0, sizeof(PROCESS_INFORMATION));
-	si.cb = sizeof(si);
-	si.dwFlags = STARTF_USESHOWWINDOW;
-	si.wShowWindow = HIDE_WINDOW;
-}
-
-
-
-std::string GetRealPath(const std::string& strFileName)
-{
-	//从其他盘符找依赖的dll路径
-	std::string strFilePath;
-	std::vector<std::string> vecDiskList;
-	GetLocalDiskList(vecDiskList);
-	for (std::vector<std::string>::iterator itor = vecDiskList.begin();
-		itor != vecDiskList.end(); ++itor)
-	{
-		std::string& strDiskName = *itor;
-		std::string strTemp;
-		strTemp.clear();
-		strTemp.append(strDiskName);
-		strTemp.append("Nmenu\\YDCloudSvcHost\\");
-		strTemp.append(strFileName);
-		if (PathFileExistsA(strTemp.data()))
-		{
-			strFilePath = strTemp;
-		}
-
-		if (!strFilePath.empty())
-			break;
-	}
-
-	//其他盘符找不到 则在当前进程目录下找
-	char szBuf[MAX_PATH] = { 0 };
-	GetModuleFileNameA(NULL, szBuf, sizeof(szBuf) * sizeof(char));
-	PathRemoveFileSpecA(szBuf);
-	std::string strBinPath;
-	strBinPath.append(szBuf);
-	if (strFilePath.empty())
-	{
-		strFilePath.append(strBinPath);
-		strFilePath.append("\\");
-		strFilePath.append(strFileName);
-	}
-
-
-	return strFilePath;
 }
